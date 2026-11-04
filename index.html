@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>iBag — monte sua sacola</title>
+<style>
+:root{--bg:#fbfaf6;--card:#fff;--ink:#14201a;--mut:#6b746d;--pri:#1f4d3a;--on:#fff;--pink:#ff8fb1;--sun:#ffcf4a;--line:#e3e1d6;--bad:#d93a4f;--ok:#1fa36b}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1a14;--card:#17261e;--ink:#f3f1e8;--mut:#9fb0a4;--pri:#6fe3a5;--on:#0f1a14;--line:#28402f}}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;padding-bottom:6rem}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:.55rem 1rem;font-weight:700}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.pri{background:var(--pri);color:var(--on);border-color:var(--pri)}
+.sun{background:var(--sun);color:#14201a;border-color:var(--sun)}
+input,select,textarea{width:100%;padding:.65rem .9rem;border-radius:14px;border:1.5px solid var(--line);background:var(--card)}
+header{display:flex;align-items:center;gap:.6rem;padding:.8rem clamp(1rem,4vw,3rem);flex-wrap:wrap}
+.logo{font-size:1.9rem;font-weight:900;letter-spacing:-.06em;color:var(--pri);margin-right:auto}
+.logo b{display:inline-block;background:var(--pink);color:#14201a;border-radius:50% 50% 50% 8px;width:1.7rem;height:1.7rem;text-align:center;line-height:1.7rem;font-size:1.1rem;margin-right:.25rem;transform:rotate(-8deg)}
+#conn{font-size:.8rem;display:flex;align-items:center;gap:.4rem}
+#conn i{width:.6rem;height:.6rem;border-radius:50%;background:var(--mut)}
+#conn.ok i{background:var(--ok)}#conn.off i{background:var(--bad)}
+.top{display:grid;grid-template-columns:1.1fr .9fr;gap:2rem;padding:1.5rem clamp(1rem,4vw,3rem) 1rem;align-items:center}
+@media(max-width:800px){.top{grid-template-columns:1fr}}
+h1{font-size:clamp(2.4rem,8vw,5.5rem);line-height:.92;letter-spacing:-.06em;font-weight:900}
+h1 em{font-style:normal;display:inline-block;background:var(--sun);color:#14201a;padding:0 .2em;border-radius:.2em;transform:rotate(-2deg)}
+.magic{background:var(--pri);color:var(--on);border-radius:28px;padding:1.4rem;display:flex;flex-direction:column;gap:.8rem}
+.magic h2{font-size:1.4rem;letter-spacing:-.03em}
+.magic output{font-size:3rem;font-weight:900;letter-spacing:-.05em;line-height:1}
+.magic input[type=range]{padding:0;accent-color:var(--sun);border:0;background:none}
+.magic p{opacity:.85;font-size:.9rem}
+.rail{display:flex;gap:.9rem;overflow-x:auto;padding:1rem clamp(1rem,4vw,3rem);scrollbar-width:none}
+.rail button{display:flex;flex-direction:column;align-items:center;gap:.3rem;border:0;background:none;padding:0;font-size:.82rem;color:var(--mut);white-space:nowrap}
+.rail button span{width:4rem;height:4rem;border-radius:50%;display:grid;place-items:center;font-size:1.9rem;background:var(--card);border:2px solid var(--line);transition:.2s}
+.rail button.on{color:var(--ink)}.rail button.on span{background:var(--pink);border-color:var(--pink);transform:scale(1.12)}
+.tools{display:flex;gap:.6rem;padding:0 clamp(1rem,4vw,3rem);flex-wrap:wrap}
+.tools input{flex:1;min-width:180px}.tools select{width:auto}
+.list{padding:.5rem clamp(1rem,4vw,3rem)}
+.it{display:grid;grid-template-columns:4.5rem 1fr auto;gap:1rem;align-items:center;padding:1rem 0;border-bottom:1.5px dashed var(--line)}
+.it.hl{animation:hl 1.6s}
+@keyframes hl{30%{background:var(--sun);color:#14201a}}
+.tile{width:4.5rem;height:4.5rem;border-radius:22px 22px 22px 6px;display:grid;place-items:center;font-size:2.4rem;background:hsl(var(--h) 85% 84%);overflow:hidden}
+.tile img{width:100%;height:100%;object-fit:cover}
+.it h3{font-size:1.15rem;letter-spacing:-.02em}
+.it p{color:var(--mut);font-size:.88rem;max-width:52ch}
+.it small{color:var(--mut)}
+.buy{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:.4rem}
+.buy b{font-size:1.25rem;letter-spacing:-.03em}
+.step{display:flex;align-items:center;gap:.5rem}.step button{width:2rem;height:2rem;padding:0}
+.sk{height:5rem;margin:.6rem 0;border-radius:20px;background:linear-gradient(90deg,var(--card) 30%,var(--line) 50%,var(--card) 70%);background-size:300% 100%;animation:sk 1.2s infinite}
+@keyframes sk{to{background-position:-100% 0}}
+#dock{position:fixed;left:50%;bottom:1rem;transform:translateX(-50%);z-index:20;display:flex;align-items:center;gap:.8rem;background:var(--ink);color:var(--bg);border:0;padding:.7rem 1.3rem;box-shadow:0 10px 40px #0004;max-width:94vw}
+#stack{display:flex}#stack span{font-size:1.4rem;margin-left:-.4rem}
+#dock.bump{animation:bump .4s}
+@keyframes bump{40%{transform:translateX(-50%) scale(1.12)}}
+.fly{position:fixed;font-size:2rem;z-index:80;pointer-events:none}
+#ov{position:fixed;inset:0;background:#0008;opacity:0;pointer-events:none;transition:.25s;z-index:30}
+#ov.on{opacity:1;pointer-events:auto}
+#sh{position:fixed;left:50%;bottom:0;width:min(600px,100%);max-height:88vh;background:var(--bg);z-index:31;border-radius:28px 28px 0 0;transform:translate(-50%,105%);transition:.35s cubic-bezier(.2,.9,.3,1);display:flex;flex-direction:column}
+#sh.on{transform:translate(-50%,0)}
+#sh h2{padding:1.1rem 1.3rem .5rem;display:flex;justify-content:space-between;align-items:center;letter-spacing:-.03em}
+#db{overflow:auto;padding:.5rem 1.3rem 1.5rem;display:flex;flex-direction:column;gap:.8rem}
+.ln{display:flex;gap:.8rem;align-items:center}.ln div{flex:1}.ln .e{font-size:1.8rem}
+.tot{display:flex;justify-content:space-between;font-size:1.4rem;font-weight:900;letter-spacing:-.03em}
+.ord{border:1.5px solid var(--line);border-radius:22px;padding:1rem;display:flex;flex-direction:column;gap:.7rem;background:var(--card)}
+.road{position:relative;height:6px;margin:1.4rem .6rem .3rem;border-radius:6px;background:repeating-linear-gradient(90deg,var(--line) 0 10px,transparent 10px 18px)}
+.road u{position:absolute;left:0;top:0;height:6px;border-radius:6px;background:var(--pri);transition:width 1s;text-decoration:none}
+.road i{position:absolute;top:-1.3rem;font-style:normal;font-size:1.6rem;transform:translateX(-50%);transition:left 1s}
+.lbl{display:flex;justify-content:space-between;font-size:.72rem;color:var(--mut)}.lbl .on{color:var(--ink);font-weight:800}
+.tag{font-size:.78rem;padding:.1rem .6rem;border-radius:99px;background:var(--sun);color:#14201a;font-weight:800}.tag.bad{background:var(--bad);color:#fff}
+.acts{display:flex;gap:.4rem;flex-wrap:wrap}.acts button{padding:.35rem .8rem;font-size:.85rem}
+.r2{display:flex;justify-content:space-between;align-items:center;gap:.5rem}
+#modal{position:fixed;inset:0;z-index:40;display:none;place-items:center;background:#0009;padding:1rem}
+#modal.on{display:grid}
+#modal form{background:var(--bg);border-radius:26px;padding:1.4rem;width:min(400px,100%);display:flex;flex-direction:column;gap:.7rem}
+.tabs{display:flex;gap:.4rem}.tabs button{flex:1}.tabs button.on{background:var(--ink);color:var(--bg)}
+#toasts{position:fixed;left:50%;top:1rem;transform:translateX(-50%);z-index:60;display:flex;flex-direction:column;gap:.4rem;align-items:center}
+.toast{background:var(--ink);color:var(--bg);padding:.6rem 1.1rem;border-radius:99px;font-weight:700;animation:tin .3s}.toast.bad{background:var(--bad);color:#fff}
+@keyframes tin{from{opacity:0;transform:translateY(-10px)}}
+.conf{position:fixed;font-size:1.6rem;pointer-events:none;z-index:70;animation:fall 1.6s forwards}
+@keyframes fall{to{transform:translate(var(--x),var(--y)) rotate(540deg);opacity:0}}
+.empty{text-align:center;color:var(--mut);padding:2rem 1rem}
+details{border:1.5px solid var(--line);border-radius:18px;padding:.8rem;background:var(--card)}
+details form{display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+:root[data-theme="dark"]{--bg:#0f1a14;--card:#17261e;--ink:#f3f1e8;--mut:#9fb0a4;--pri:#6fe3a5;--on:#0f1a14;--line:#28402f}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+#dock{bottom:calc(1rem + env(safe-area-inset-bottom,0px))}
+.demo{background:var(--sun);color:#14201a;text-align:center;font-size:.85rem;padding:.45rem 1rem;font-weight:600}
+.heart{border:0;background:none;padding:0;font-size:1.25rem;line-height:1}
+.tile[data-det]{cursor:pointer}
+.star{border:0;background:none;padding:0 .1rem;font-size:1.1rem}
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.kpi{background:var(--pri);color:var(--on);border-radius:18px;padding:.8rem}.kpi b{display:block;font-size:1.15rem;letter-spacing:-.03em}.kpi small{opacity:.85}
+.tools select#srt{width:auto}
+.foot{text-align:center;color:var(--mut);font-size:.82rem;padding:2rem 1rem}
+</style>
+</head>
+<body>
+<div class="demo">🎓 Versão demonstrativa: os dados ficam só no seu navegador. Admin para testar: <b>admin@ibag.com</b> / <b>admin123</b></div>
+<header>
+  <div class="logo"><b>i</b>Bag</div>
+  <button id="conn" title="Configurar endereço da API"><i></i><span>conectando…</span></button>
+  <button id="bOrd">📦 Pedidos</button>
+  <button id="bUser" class="pri">Entrar</button>
+</header>
+
+<section class="top">
+  <h1>Monte a sua <em>sacola</em>, a gente leva.</h1>
+  <div class="magic">
+    <h2>✨ Combo mágico</h2>
+    <p>Diga quanto quer gastar e a gente monta prato, bebida e sobremesa que cabem no valor.</p>
+    <output id="bv">R$ 60</output>
+    <input id="bud" type="range" min="20" max="200" step="5" value="60" aria-label="Orçamento">
+    <button class="sun" id="mix">Montar meu combo</button>
+  </div>
+</section>
+
+<nav id="cats" class="rail" aria-label="Categorias"></nav>
+<div class="tools">
+  <input id="q" type="search" placeholder="Buscar prato, bebida ou loja" aria-label="Buscar">
+  <select id="st" aria-label="Loja"></select>
+  <select id="srt" aria-label="Ordenar"><option value="">Ordenar: relevância</option><option value="lo">Menor preço</option><option value="hi">Maior preço</option><option value="top">Lojas mais bem avaliadas</option></select>
+  <button id="favb">🤍 Favoritos</button>
+  <button id="surp">🎲 Surpreenda-me</button>
+</div>
+<main id="list" class="list"></main>
+<footer class="foot">iBag · projeto acadêmico de delivery · FastAPI + SQLite + JavaScript</footer>
+
+<button id="dock" class="pri" aria-label="Abrir sacola"><span id="stack"></span><span id="dl">Sacola vazia</span></button>
+<div id="ov"></div>
+<section id="sh"><h2><span id="dt"></span><button id="dx" aria-label="Fechar">✕</button></h2><div id="db"></div></section>
+<div id="modal"></div>
+<div id="toasts"></div>
+
+<script>
+const LS = (() => { try { const k = '__t'; localStorage.setItem(k, k); localStorage.removeItem(k); return localStorage; } catch (e) { return {}; } })();
+/* ===== CONEXÃO COM A API =====
+   Ordem: ?api=URL na barra de endereço > valor salvo (clique no ponto de status) > mesma origem (site servido pelo FastAPI) > localhost:8000 */
+const API = (new URLSearchParams(location.search).get('api') || LS.api ||
+  (location.protocol.startsWith('http') ? '' : 'http://localhost:8000')).replace(/\/$/, '');
+
+const $ = s => document.querySelector(s);
+const S = {cats:[],stores:[],prods:[],cat:0,store:0,q:'',cart:JSON.parse(LS.cart || '{}'),user:null,token:LS.token || null,dr:null};
+const STEPS = [['received','Recebido'],['preparing','Preparando'],['out_for_delivery','A caminho'],['completed','Entregue']];
+const EMO = {suco:'🧃',cerv:'🍺',sorv:'🍨',açaí:'🥣',acai:'🥣',água:'💧',agua:'💧',padar:'🥐',caf:'☕',pão:'🥐',croiss:'🥐',coxinha:'🍗',batata:'🍟',sandu:'🥪',taco:'🌮',burrito:'🌯',nacho:'🌮',wrap:'🌯',salada:'🥗',bowl:'🥗',espaguete:'🍝',lasanha:'🍝',massa:'🍝',burg:'🍔',búrg:'🍔',hamb:'🍔',pizz:'🍕',jap:'🍣',sush:'🍣',beb:'🥤',sobre:'🍰',exclus:'🛍️',sacola:'🛍️',mochila:'🎒',saud:'🥗',mex:'🌮'};
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = c => (c / 100).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+
+/* ===== API SIMULADA (versão demonstrativa): roda no navegador; dados salvos no localStorage ===== */
+const DBK = 'ibag_demo_v2';
+const D = (() => {
+  try { const j = JSON.parse(LS[DBK] || 'null'); if (j) return j; } catch (e) {}
+  const C = [[1,'Exclusivos iBag','Produtos oficiais e ecológicos da marca iBag'],[2,'Hambúrgueres','Burgers artesanais, suculentos e combos'],[3,'Pizzas','Pizzas salgadas e doces assadas no forno a lenha'],[4,'Comida Japonesa','Sushis, temakis, sashimis e combos orientais'],[5,'Bebidas','Refrigerantes, sucos naturais e chás'],[6,'Sobremesas','Doces, bolos e sorvetes para adoçar o seu dia'],[7,'Massas','Massas frescas, lasanhas e molhos artesanais'],[8,'Saudáveis','Saladas, bowls e opções leves'],[9,'Mexicana','Tacos, burritos e nachos'],[10,'Padaria & Café','Pães, cafés e lanches rápidos']];
+  const L = [[1,'Loja Oficial iBag','Acessórios',5],[2,'iBag Burger House','Hambúrgueres',4.8],[3,'Pizzeria Bella Napoli','Pizzas',4.7],[4,'Sakura Sushi Bar','Comida Japonesa',4.9],[5,'Doceria Doce Sonho','Sobremesas',4.6],[6,'Cantina Nonna Lucia','Massas',4.8],[7,'Verde Bowl','Saudáveis',4.7],[8,'El Taco Loco','Mexicana',4.5],[9,'Padaria Pão Quente','Padaria & Café',4.6]];
+  const P = [[1,1,'Sacola Térmica iBag Pro','Sacola ecológica e reutilizável iBag. Mantém o seu pedido quente ou gelado por mais tempo.',1990],
+    [1,1,'Mochila Entregador iBag','Mochila reforçada impermeável com isolamento térmico de alta performance.',12900],
+    [2,2,'Hambúrguer iBag Smash','Pão brioche, 2 smash burgers de 90g, queijo prato e molho da casa.',3290],
+    [2,2,'Cheese Bacon','Blend 160g, cheddar, bacon crocante e cebola caramelizada.',3690],
+    [2,2,'Burger Veggie','Hambúrguer de grão-de-bico, rúcula, tomate e maionese verde.',3490],
+    [3,3,'Pizza Margherita','Molho de tomate, muçarela de búfala e manjericão fresco.',4590],
+    [3,3,'Pizza Calabresa','Calabresa artesanal, cebola roxa e azeitonas.',4290],
+    [3,3,'Pizza Quatro Queijos','Muçarela, gorgonzola, parmesão e provolone.',4890],
+    [4,4,'Combo Sushi 20 peças','Salmão, atum e kani, com shoyu e gengibre.',5490],
+    [4,4,'Temaki de Salmão','Salmão fresco, cream cheese e cebolinha.',2790],
+    [4,4,'Sashimi Misto','12 fatias de salmão, atum e peixe branco.',4290],
+    [2,5,'Suco Natural de Laranja','Espremido na hora, 500ml.',1090],
+    [2,5,'Refrigerante Lata','Lata 350ml gelada. Cola, guaraná ou limão.',690],
+    [4,5,'Chá Gelado de Pêssego','Chá preto com pêssego, 400ml.',890],
+    [5,6,'Brigadeiro Gourmet','Brigadeiro de chocolate belga, caixa com 6.',2290],
+    [5,6,'Petit Gâteau','Bolo quente de chocolate com sorvete de creme.',2590],
+    [5,6,'Torta de Limão','Fatia generosa com merengue maçaricado.',1890],
+    [2,2,'Duplo Cheddar Melt','Dois blends de 120g, muito cheddar cremoso e cebola crispy.',4190],
+    [2,2,'Burger BBQ Crocante','Blend 160g, bacon, anéis de cebola e molho barbecue defumado.',3890],
+    [2,2,'Batata Frita Crocante','Porção generosa de batata frita sequinha com sal e páprica.',1890],
+    [2,2,'Onion Rings','Anéis de cebola empanados, com molho especial da casa.',2190],
+    [3,3,'Pizza Frango com Catupiry','Frango desfiado, catupiry original e milho.',4490],
+    [3,3,'Pizza Portuguesa','Presunto, ovos, cebola, ervilha e azeitona.',4390],
+    [3,3,'Pizza Pepperoni','Pepperoni fatiado, muçarela e orégano.',4690],
+    [3,3,'Pizza de Chocolate com Morango','Chocolate ao leite derretido e morangos frescos.',3990],
+    [4,4,'Hot Roll Salmão (10 peças)','Salmão empanado e frito, com cream cheese e molho tarê.',3290],
+    [4,4,'Uramaki Filadélfia (8 peças)','Salmão, cream cheese e cebolinha.',2890],
+    [4,4,'Yakisoba de Frango','Macarrão oriental salteado com legumes e frango.',3490],
+    [4,4,'Gyoza (6 unidades)','Pastéis japoneses de carne suína grelhados.',2490],
+    [2,5,'Suco de Maracujá 500ml','Natural, feito na hora. Pode pedir sem açúcar.',1190],
+    [2,5,'Limonada Suíça','Limão batido com leite condensado, 500ml.',1290],
+    [2,5,'Cerveja Artesanal IPA 355ml','Lúpulo cítrico e amargor equilibrado. Gelada.',1890],
+    [4,5,'Água Mineral 500ml','Sem gás ou com gás.',490],
+    [9,5,'Café Expresso','Café especial de grãos selecionados.',590],
+    [9,5,'Cappuccino Cremoso','Café com leite vaporizado e canela.',1090],
+    [5,6,'Cheesecake de Frutas Vermelhas','Base crocante e calda de frutas vermelhas.',2490],
+    [5,6,'Sorvete Artesanal 2 Bolas','Sabores do dia, com calda e farofa de castanha.',1790],
+    [5,6,'Churros Recheados (6 un.)','Recheio de doce de leite e açúcar com canela.',2190],
+    [5,6,'Pudim de Leite Condensado','Pudim cremoso com calda de caramelo.',1490],
+    [5,6,'Açaí 500ml com Frutas','Açaí cremoso com banana, morango e granola.',2690],
+    [6,7,'Lasanha à Bolonhesa','Camadas de massa fresca, molho bolonhesa e queijo gratinado.',4290],
+    [6,7,'Espaguete ao Pomodoro','Espaguete al dente com molho de tomate fresco e manjericão.',3490],
+    [6,7,'Fettuccine Alfredo','Fettuccine em molho cremoso de queijo parmesão.',3990],
+    [6,7,'Nhoque ao Sugo','Nhoque macio com molho de tomate e parmesão.',3690],
+    [7,8,'Salada Caesar com Frango','Alface americana, frango grelhado, parmesão e croutons.',3290],
+    [7,8,'Bowl de Salmão','Arroz, salmão grelhado, abacate, pepino e gergelim.',3990],
+    [7,8,'Wrap Integral de Frango','Wrap integral com frango, folhas e molho de iogurte.',2790],
+    [7,8,'Sanduíche Natural','Pão integral, peito de peru, queijo branco e cenoura.',2290],
+    [7,5,'Suco Detox Verde','Couve, limão, gengibre e maçã.',1390],
+    [8,9,'Tacos de Carne (3 un.)','Carne temperada, guacamole, pico de gallo e coentro.',3290],
+    [8,9,'Burrito de Frango','Tortilha, frango, feijão, arroz e queijo.',3490],
+    [8,9,'Nachos com Queijo','Tortilhas crocantes com cheddar e jalapeño.',2790],
+    [8,9,'Quesadilla de Queijo','Tortilha grelhada recheada de queijo derretido.',2590],
+    [9,10,'Pão de Queijo (6 un.)','Quentinho, crocante por fora e macio por dentro.',1290],
+    [9,10,'Croissant de Chocolate','Massa folhada amanteigada com recheio de chocolate.',1490],
+    [9,10,'Misto Quente','Pão de forma, presunto e queijo na chapa.',1590],
+    [9,10,'Bolo de Cenoura com Chocolate','Fatia generosa com cobertura de chocolate.',1390]];
+  return {users:[{id:1,name:'Administrador',email:'admin@ibag.com',password:'admin123',role:'admin'}],
+    cats:C.map(([id,name,description]) => ({id,name,description})),
+    stores:L.map(([id,name,category,rating]) => ({id,name,category,rating})),
+    prods:P.map(([store_id,category_id,name,description,price_cents], i) => ({id:i + 1,store_id,category_id,name,description,price_cents,image_url:'',active:true})),
+    orders:[], nu:2, no:1};
+})();
+const save = () => { try { LS[DBK] = JSON.stringify(D); } catch (e) {} };
+const fail = m => { throw new Error(m); };
+async function api(path, o = {}) {
+  await new Promise(r => setTimeout(r, 120));
+  const [p] = path.split('?'), m = (o.method || 'GET').toUpperCase();
+  const b = o.json || (o.body ? Object.fromEntries(o.body) : {});
+  const me = S.token && D.users.find(u => 't' + u.id === S.token);
+  const auth = () => { if (!me) { if (S.token) logout(true); fail('Entre na sua conta'); } return me; };
+  const pub = u => ({id:u.id,name:u.name,email:u.email,role:u.role});
+  const live = x => { if (x.auto && x.status !== 'cancelled') x.status = STEPS[Math.min(3, Math.floor((Date.now() - x.t0) / 10000))][0]; return x; };
+  if (p === '/health') return {status:'ok'};
+  if (p === '/categories') return D.cats;
+  if (p === '/stores') return [...D.stores].sort((a, c) => c.rating - a.rating);
+  if (p === '/products' && m === 'GET') return D.prods.filter(x => x.active);
+  if (p === '/products' && m === 'POST') {
+    if (auth().role !== 'admin') fail('Acesso restrito a administradores');
+    if (!b.name || !(b.price_cents >= 0)) fail('Dados do produto inválidos');
+    const x = {image_url:'',active:true,store_id:null,category_id:null,description:'',...b,id:Math.max(0, ...D.prods.map(z => z.id)) + 1};
+    D.prods.push(x); save(); return x;
+  }
+  if (p === '/auth/register') {
+    if (!b.name || b.name.length < 2) fail('Informe seu nome');
+    if (!/^\S+@\S+\.\S+$/.test(b.email || '')) fail('E-mail inválido');
+    if ((b.password || '').length < 6) fail('A senha precisa ter 6 ou mais caracteres');
+    const em = b.email.toLowerCase(); if (D.users.some(u => u.email === em)) fail('E-mail já cadastrado');
+    const u = {id:D.nu++,name:b.name,email:em,password:b.password,role:'customer'}; D.users.push(u); save(); return pub(u);
+  }
+  if (p === '/auth/login') {
+    const u = D.users.find(x => x.email === (b.username || '').toLowerCase() && x.password === b.password);
+    if (!u) fail('E-mail ou senha incorretos');
+    return {access_token:'t' + u.id,token_type:'bearer',user:pub(u)};
+  }
+  if (p === '/auth/me') return pub(auth());
+  if (p === '/orders' && m === 'GET') {
+    auth(); const l = D.orders.filter(x => me.role === 'admin' || x.user_id === me.id).map(live).reverse(); save(); return l;
+  }
+  if (p === '/orders' && m === 'POST') {
+    auth(); if ((b.delivery_address || '').trim().length < 5) fail('Informe o endereço de entrega');
+    const q = {}; (b.items || []).forEach(i => q[i.product_id] = (q[i.product_id] || 0) + i.quantity);
+    const items = Object.entries(q).map(([id, quantity]) => { const x = D.prods.find(z => z.id == id && z.active); if (!x) fail('Produto ' + id + ' indisponível'); return {product_id:x.id,product_name_snapshot:x.name,unit_price_cents:x.price_cents,quantity}; });
+    if (!items.length) fail('Pedido vazio');
+    const od = {id:D.no++,user_id:me.id,delivery_address:b.delivery_address,status:'received',total_cents:items.reduce((a, i) => a + i.unit_price_cents * i.quantity, 0),t0:Date.now(),auto:true,items};
+    D.orders.push(od); save(); return od;
+  }
+  const mt = p.match(/^\/orders\/(\d+)\/status$/);
+  if (mt && m === 'PATCH') {
+    auth(); const od = D.orders.find(x => x.id == mt[1]);
+    if (!od || (me.role !== 'admin' && od.user_id !== me.id)) fail('Pedido não encontrado');
+    live(od);
+    if (me.role !== 'admin') { if (b.status !== 'cancelled' || od.status !== 'received') fail('Você só pode cancelar pedidos que ainda estão como recebidos'); }
+    else if (od.status === 'completed' || od.status === 'cancelled') fail('Este pedido já foi finalizado');
+    od.status = b.status; od.auto = false; save(); return od;
+  }
+  fail('Rota não encontrada: ' + p);
+}
+/* ===== FIM DA API SIMULADA ===== */
+const toast = (m, bad) => { const t = document.createElement('div'); t.className = 'toast' + (bad ? ' bad' : ''); t.textContent = m; $('#toasts').append(t); setTimeout(() => t.remove(), 3200); };
+function burst(e) {
+  for (let i = 0; i < 26; i++) {
+    const s = document.createElement('span'); s.className = 'conf'; s.textContent = e;
+    s.style.cssText = `left:50%;top:70%;--x:${(Math.random() - .5) * 90}vw;--y:${-Math.random() * 60 - 10}vh`;
+    document.body.append(s); setTimeout(() => s.remove(), 1700);
+  }
+}
+const kind = p => { const k = (p.name + ' ' + (S.cats.find(c => c.id === p.category_id)?.name || '')).toLowerCase();
+  return /exclus|sacola|mochila/.test(k) ? 'x' : /beb|suco|cerv|refri/.test(k) ? 'd' : /sobre|doce|sorv|bolo/.test(k) ? 's' : 'm'; };
+const emo = p => { const k = (p.name + ' ' + (S.cats.find(c => c.id === p.category_id)?.name || '')).toLowerCase();
+  return Object.entries(EMO).find(([w]) => k.includes(w))?.[1] || '🍽️'; };
+const storeOf = id => S.stores.find(s => s.id === id);
+function fly(from, e) {
+  const a = from.getBoundingClientRect(), b = $('#dock').getBoundingClientRect(), s = document.createElement('span');
+  s.className = 'fly'; s.textContent = e; s.style.left = a.left + 'px'; s.style.top = a.top + 'px'; document.body.append(s);
+  s.animate([{transform:'translate(0,0) scale(1)'}, {transform:`translate(${b.left + 30 - a.left}px,${b.top - a.top}px) scale(.4)`, opacity:.6}], {duration:650, easing:'cubic-bezier(.5,-.3,.8,.6)'}).onfinish = () => s.remove();
+}
+
+/* ===== Vitrine ===== */
+function renderTop() {
+  $('#cats').innerHTML = [{id:0,name:'Tudo'}, ...S.cats].map(c => `<button class="${S.cat === c.id ? 'on' : ''}" data-cat="${c.id}"><span>${c.id ? emo({name:c.name}) : '✨'}</span>${esc(c.name)}</button>`).join('');
+  $('#st').innerHTML = '<option value="0">Todas as lojas</option>' + S.stores.map(s => `<option value="${s.id}" ${S.store === s.id ? 'selected' : ''}>${esc(s.name)} ⭐${Number(s.rating).toFixed(1)}</option>`).join('');
+}
+function renderList() {
+  const q = S.q.toLowerCase();
+  const l = S.prods.filter(p => (!S.cat || p.category_id === S.cat) && (!S.store || p.store_id === S.store) && (!q || (p.name + p.description + (storeOf(p.store_id)?.name || '')).toLowerCase().includes(q)));
+  const l2 = sortL(l.filter(p => !X.onlyFav || X.fav.includes(p.id)));
+  $('#list').innerHTML = l2.length ? l2.map(p => { const n = S.cart[p.id] || 0;
+    return `<article class="it" id="p${p.id}"><div class="tile" data-det="${p.id}" style="--h:${((p.category_id || 0) * 53 + 120) % 360}">${p.image_url ? `<img src="${esc(p.image_url)}" alt="">` : emo(p)}</div>
+    <div><h3>${esc(p.name)}</h3><p>${esc(p.description)}</p><small>${esc(storeOf(p.store_id)?.name || 'iBag')}</small></div>
+    <div class="buy"><button class="heart" data-fav="${p.id}" aria-label="Favoritar" aria-pressed="${X.fav.includes(p.id)}">${X.fav.includes(p.id) ? '❤️' : '🤍'}</button><b>${money(p.price_cents)}</b>${n ? `<div class="step"><button data-dec="${p.id}" aria-label="Menos">−</button><b>${n}</b><button data-inc="${p.id}" aria-label="Mais">+</button></div>` : `<button class="pri" data-inc="${p.id}">Adicionar</button>`}</div></article>`; }).join('')
+    : '<div class="empty">Nada por aqui. Tente outra busca ou limpe os filtros.</div>';
+}
+function saveCart() {
+  LS.cart = JSON.stringify(S.cart);
+  const its = Object.entries(S.cart).map(([i, n]) => [S.prods.find(p => p.id == i), n]).filter(x => x[0]);
+  const n = its.reduce((a, x) => a + x[1], 0), t = its.reduce((a, x) => a + x[0].price_cents * x[1], 0);
+  $('#stack').innerHTML = its.slice(0, 5).map(x => `<span>${emo(x[0])}</span>`).join('');
+  $('#dl').textContent = n ? `${n} ${n > 1 ? 'itens' : 'item'} · ${money(t)}` : 'Sacola vazia';
+  const d = $('#dock'); d.classList.remove('bump'); void d.offsetWidth; d.classList.add('bump');
+}
+function change(id, d) {
+  const n = (S.cart[id] || 0) + d;
+  n <= 0 ? delete S.cart[id] : S.cart[id] = Math.min(n, 99);
+  saveCart(); renderList(); if (S.dr === 'cart') showCart();
+}
+function combo() {
+  const B = $('#bud').value * 100, by = k => S.prods.filter(p => kind(p) === k);
+  const pick = (arr, max) => { const o = arr.filter(p => p.price_cents <= max); return o[Math.floor(Math.random() * o.length)]; };
+  const m = pick(by('m'), B - 0); if (!m) return toast('Nenhum prato cabe nesse valor. Aumente o orçamento.', true);
+  let left = B - m.price_cents; const got = [m];
+  const d = pick(by('d'), left); if (d) { got.push(d); left -= d.price_cents; }
+  const s = pick(by('s'), left); if (s) { got.push(s); left -= s.price_cents; }
+  S.cart = {}; got.forEach((p, i) => setTimeout(() => { fly($('#mix'), emo(p)); S.cart[p.id] = 1; saveCart(); renderList(); }, i * 250));
+  setTimeout(() => { burst('✨'); toast(`Combo de ${got.length} itens por ${money(B - left)}`); }, got.length * 250);
+}
+
+/* ===== Sacola e pedidos ===== */
+function openSh(k) { S.dr = k; $('#sh').classList.add('on'); $('#ov').classList.add('on'); k === 'cart' ? showCart() : showOrders(); }
+function closeSh() { S.dr = null; $('#sh').classList.remove('on'); $('#ov').classList.remove('on'); }
+function showCart() {
+  $('#dt').textContent = 'Sua sacola';
+  const ids = Object.keys(S.cart).map(Number).filter(i => S.prods.some(p => p.id === i));
+  if (!ids.length) { $('#db').innerHTML = '<div class="empty">🛍️<br>Sua sacola está vazia.<br>Use o combo mágico ou escolha da lista.</div>'; return; }
+  let t = 0;
+  $('#db').innerHTML = ids.map(id => { const p = S.prods.find(x => x.id === id), n = S.cart[id]; t += p.price_cents * n;
+    return `<div class="ln"><span class="e">${emo(p)}</span><div><b>${esc(p.name)}</b><br><small>${money(p.price_cents)}</small></div><div class="step"><button data-dec="${id}">−</button><b>${n}</b><button data-inc="${id}">+</button></div></div>`; }).join('')
+    + `<div class="tot"><span>Total</span><span>${money(t)}</span></div><small>⏱️ Entrega estimada: 25–40 min</small><textarea id="addr" rows="2" placeholder="Endereço de entrega (rua, número, bairro)">${esc(LS.addr || '')}</textarea><button class="sun" id="go">Finalizar pedido</button>`;
+}
+async function checkout() {
+  if (!S.user) { toast('Entre na sua conta para finalizar', true); return authModal(); }
+  const a = $('#addr').value.trim(); LS.addr = a;
+  try {
+    await api('/orders', {method:'POST', json:{delivery_address:a, items:Object.entries(S.cart).map(([product_id, quantity]) => ({product_id:+product_id, quantity}))}});
+    S.cart = {}; saveCart(); renderList(); burst('🎉'); toast('Pedido enviado! A moto já está saindo.'); openSh('orders');
+  } catch (e) { toast(e.message, true); }
+}
+async function showOrders() {
+  const adm = S.user?.role === 'admin';
+  $('#dt').textContent = adm ? 'Painel de pedidos' : 'Meus pedidos';
+  if (!S.user) { $('#db').innerHTML = '<div class="empty">Entre na sua conta para ver seus pedidos.</div>'; return; }
+  try {
+    const os = X.orders = await api('/orders');
+    $('#db').innerHTML = (adm ? dash(os) + adminForm() : '') + (os.length ? os.map(o => {
+      const i = STEPS.findIndex(s => s[0] === o.status), bad = o.status === 'cancelled', nx = STEPS[i + 1];
+      return `<div class="ord"><div class="r2"><b>Pedido #${o.id}</b><span class="tag ${bad ? 'bad' : ''}">${bad ? 'Cancelado' : STEPS[i][1]}</span></div>
+      <small>${o.items.map(x => x.quantity + '× ' + esc(x.product_name_snapshot)).join(', ')}</small>
+      ${bad ? '' : `<div class="road"><u style="width:${i / 3 * 92 + 4}%"></u><i style="left:${i / 3 * 92 + 4}%">${i === 3 ? '🏠' : '🛵'}</i></div><div class="lbl">${STEPS.map((s, k) => `<span class="${k <= i ? 'on' : ''}">${s[1]}</span>`).join('')}</div>`}
+      <div class="r2"><b>${money(o.total_cents)}</b><div class="acts">${!adm ? `<button data-again="${o.id}">↻ Pedir de novo</button>` : ''}${!adm && o.status === 'completed' ? rate(o.id) : ''}
+      ${adm && nx && !bad ? `<button class="pri" data-st="${o.id}:${nx[0]}">Avançar: ${nx[1]}</button>` : ''}
+      ${(adm ? !bad && o.status !== 'completed' : o.status === 'received') ? `<button data-st="${o.id}:cancelled">Cancelar</button>` : ''}</div></div>
+      ${adm ? `<small>Cliente #${o.user_id} · ${esc(o.delivery_address)}</small>` : ''}</div>`; }).join('') : '<div class="empty">📦<br>Nenhum pedido ainda.</div>');
+  } catch (e) { $('#db').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+const adminForm = () => `<details><summary><b>＋ Novo produto</b></summary><form id="np"><input name="name" placeholder="Nome" required><input name="description" placeholder="Descrição">
+  <input name="price" placeholder="Preço (ex: 24,90)" required><select name="store_id"><option value="">Loja</option>${S.stores.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
+  <select name="category_id"><option value="">Categoria</option>${S.cats.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select><button class="pri">Publicar</button></form></details>`;
+
+/* ===== Conta ===== */
+function authModal(m = 'login') {
+  const r = m === 'register';
+  $('#modal').innerHTML = `<form id="af" data-mode="${m}"><div class="tabs"><button type="button" class="${r ? '' : 'on'}" data-tab="login">Entrar</button><button type="button" class="${r ? 'on' : ''}" data-tab="register">Criar conta</button></div>
+  ${r ? '<input name="name" placeholder="Seu nome" required>' : ''}<input name="email" type="email" placeholder="E-mail" required><input name="password" type="password" placeholder="Senha (mín. 6)" minlength="6" required>
+  <button class="pri">${r ? 'Criar conta' : 'Entrar'}</button><button type="button" data-close>Fechar</button></form>`;
+  $('#modal').classList.add('on');
+}
+async function setUser() {
+  try { S.user = S.token ? await api('/auth/me') : null; } catch { S.user = null; }
+  $('#bUser').textContent = S.user ? '👤 ' + S.user.name.split(' ')[0] + ' · Sair' : 'Entrar';
+}
+function logout(silent) { S.token = S.user = null; delete LS.token; setUser(); if (!silent) toast('Você saiu da conta'); }
+
+/* ===== Eventos ===== */
+document.addEventListener('click', async e => {
+  const t = e.target.closest('button'); if (!t) return; const d = t.dataset;
+  if (d.cat !== undefined) { S.cat = +d.cat; renderTop(); renderList(); }
+  if (d.inc) { const p = S.prods.find(x => x.id == d.inc); if (!S.cart[d.inc] && p && !t.closest('#sh')) fly(t, emo(p)); change(+d.inc, 1); }
+  if (d.dec) change(+d.dec, -1);
+  if (d.tab) authModal(d.tab);
+  if (d.close !== undefined) $('#modal').classList.remove('on');
+  if (t.id === 'go') checkout();
+  if (d.st) { const [id, status] = d.st.split(':'); try { await api(`/orders/${id}/status`, {method:'PATCH', json:{status}}); showOrders(); } catch (er) { toast(er.message, true); } }
+});
+document.addEventListener('submit', async e => {
+  e.preventDefault(); const f = e.target, v = Object.fromEntries(new FormData(f));
+  try {
+    if (f.id === 'af') {
+      if (f.dataset.mode === 'register') await api('/auth/register', {method:'POST', json:v});
+      const r = await api('/auth/login', {method:'POST', body:new URLSearchParams({username:v.email, password:v.password})});
+      S.token = LS.token = r.access_token; await setUser(); $('#modal').classList.remove('on'); toast('Olá, ' + S.user.name.split(' ')[0] + '!');
+    }
+    if (f.id === 'np') {
+      await api('/products', {method:'POST', json:{name:v.name, description:v.description || '', price_cents:Math.round(parseFloat(v.price.replace(',', '.')) * 100), store_id:v.store_id ? +v.store_id : null, category_id:v.category_id ? +v.category_id : null}});
+      S.prods = await api('/products?limit=200'); renderList(); toast('Produto publicado'); showOrders();
+    }
+  } catch (er) { toast(er.message, true); }
+});
+$('#q').oninput = e => { S.q = e.target.value; renderList(); };
+$('#st').onchange = e => { S.store = +e.target.value; renderList(); };
+$('#bud').oninput = e => $('#bv').textContent = 'R$ ' + e.target.value;
+$('#mix').onclick = combo;
+$('#dock').onclick = () => openSh('cart');
+$('#bOrd').onclick = () => openSh('orders');
+$('#bUser').onclick = () => S.user ? logout() : authModal();
+$('#ov').onclick = $('#dx').onclick = closeSh;
+$('#modal').onclick = e => { if (e.target.id === 'modal') e.target.classList.remove('on'); };
+$('#conn').onclick = () => toast('Demonstração: a API e o banco são simulados neste navegador.');
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSh(); $('#modal').classList.remove('on'); } });
+$('#surp').onclick = () => {
+  if (!S.prods.length) return; S.cat = S.store = 0; S.q = ''; X.onlyFav = false; $('#favb').textContent = '🤍 Favoritos'; $('#favb').classList.remove('pri'); $('#q').value = ''; renderTop(); renderList();
+  const p = S.prods[Math.floor(Math.random() * S.prods.length)], el = $('#p' + p.id);
+  el.scrollIntoView({behavior:'smooth', block:'center'}); el.classList.add('hl'); toast(`Que tal ${p.name}? ${emo(p)}`);
+};
+/* ===== RECURSOS EXTRAS: favoritos, ordenação, detalhes, pedir de novo, avaliação e painel de indicadores ===== */
+const KV = (() => { try { localStorage.setItem('__t', '1'); localStorage.removeItem('__t'); return localStorage; } catch (e) { return {}; } })();
+const jp = (k, d) => { try { return JSON.parse(KV[k] || d); } catch (e) { return JSON.parse(d); } };
+const X = {fav:jp('ibag_fav', '[]'), rate:jp('ibag_rate', '{}'), sort:'', onlyFav:false, orders:[]};
+const keep = () => { try { KV.ibag_fav = JSON.stringify(X.fav); KV.ibag_rate = JSON.stringify(X.rate); } catch (e) {} };
+const eta = p => 20 + (p.id * 7) % 25;
+const sortL = l => { const r = p => storeOf(p.store_id)?.rating || 0;
+  return X.sort === 'lo' ? [...l].sort((a, b) => a.price_cents - b.price_cents) : X.sort === 'hi' ? [...l].sort((a, b) => b.price_cents - a.price_cents) : X.sort === 'top' ? [...l].sort((a, b) => r(b) - r(a)) : l; };
+const rate = id => [1, 2, 3, 4, 5].map(n => `<button class="star" data-rate="${id}:${n}" aria-label="${n} estrelas">${n <= (X.rate[id] || 0) ? '⭐' : '☆'}</button>`).join('');
+const dash = os => { const v = os.filter(o => o.status !== 'cancelled'), t = v.reduce((a, o) => a + o.total_cents, 0), c = {};
+  v.forEach(o => o.items.forEach(i => c[i.product_name_snapshot] = (c[i.product_name_snapshot] || 0) + i.quantity));
+  const top = Object.entries(c).sort((a, b) => b[1] - a[1])[0], k = (n, l) => `<div class="kpi"><b>${n}</b><small>${l}</small></div>`;
+  return `<div class="kpis">${k(money(t), 'Faturamento')}${k(v.length, 'Pedidos válidos')}${k(v.length ? money(Math.round(t / v.length)) : '—', 'Ticket médio')}${k(top ? esc(top[0]) : '—', 'Mais vendido')}</div>`; };
+function detail(id) {
+  const p = S.prods.find(x => x.id === id), st = storeOf(p.store_id);
+  $('#modal').innerHTML = `<form><div style="font-size:4rem;text-align:center">${emo(p)}</div><h2>${esc(p.name)}</h2><p>${esc(p.description)}</p>
+    <small>${esc(st?.name || 'iBag')} · ⭐ ${Number(st?.rating || 5).toFixed(1)} · ⏱️ ${eta(p)} min</small><b style="font-size:1.5rem">${money(p.price_cents)}</b>
+    <button class="pri" data-inc="${p.id}" data-close>Adicionar à sacola</button><button type="button" data-close>Fechar</button></form>`;
+  $('#modal').classList.add('on');
+}
+document.addEventListener('click', e => {
+  const f = e.target.closest('[data-fav]'), d = e.target.closest('[data-det]'), a = e.target.closest('[data-again]'), r = e.target.closest('[data-rate]');
+  if (f) { const id = +f.dataset.fav; X.fav = X.fav.includes(id) ? X.fav.filter(i => i !== id) : [...X.fav, id]; keep(); renderList(); }
+  if (d) detail(+d.dataset.det);
+  if (a) { const o = X.orders.find(x => x.id == a.dataset.again); (o?.items || []).forEach(i => { if (S.prods.some(p => p.id === i.product_id)) S.cart[i.product_id] = (S.cart[i.product_id] || 0) + i.quantity; });
+    saveCart(); renderList(); toast('Itens do pedido #' + o.id + ' voltaram para a sacola'); openSh('cart'); }
+  if (r) { const [id, n] = r.dataset.rate.split(':'); X.rate[id] = +n; keep(); showOrders(); toast('Obrigado pela avaliação!'); }
+});
+$('#srt').onchange = e => { X.sort = e.target.value; renderList(); };
+$('#favb').onclick = e => { X.onlyFav = !X.onlyFav; e.target.textContent = X.onlyFav ? '❤️ Favoritos' : '🤍 Favoritos'; e.target.classList.toggle('pri', X.onlyFav); renderList(); };
+setInterval(() => { if (S.dr === 'orders' && S.user) showOrders(); }, 8000);
+
+/* ===== Início ===== */
+(async () => {
+  $('#list').innerHTML = '<div class="sk"></div>'.repeat(5);
+  const c = $('#conn'), label = c.querySelector('span');
+  try {
+    await api('/health'); c.className = 'ok'; label.textContent = 'Demo · API simulada';
+    [S.cats, S.stores, S.prods] = await Promise.all([api('/categories'), api('/stores'), api('/products?limit=200')]);
+    await setUser(); renderTop(); renderList(); saveCart();
+  } catch (e) {
+    c.className = 'off'; label.textContent = 'API offline · configurar';
+    $('#list').innerHTML = `<div class="empty">Não foi possível falar com a API em <b>${esc(API || location.origin)}</b>.<br>Confira se o servidor está rodando e se o MySQL está ligado, ou clique em "API offline" para trocar o endereço.</div>`;
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+iBag - site + API + banco, tudo pronto
+
+1. Instale o Python (python.org/downloads) marcando "Add Python to PATH".
+2. Windows: dois cliques em iniciar.bat
+   Mac/Linux: no terminal, ./iniciar.sh
+3. O navegador abre sozinho em http://localhost:8000
+   (deixe a janela preta aberta enquanto usar o site)
+
+Nao precisa instalar MySQL: o banco e o arquivo ibag.db, criado na primeira vez
+ja com lojas, categorias e produtos de exemplo.
+
+Conta de administrador (criada automaticamente):
+  e-mail: admin@ibag.com
+  senha:  admin123
+Troque a senha/e-mail no inicio do main.py antes da primeira execucao, se quiser.
+
+Para recomecar do zero: feche o programa e apague o arquivo ibag.db.
