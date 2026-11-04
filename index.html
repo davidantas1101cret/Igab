@@ -95,10 +95,30 @@ details form{display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem}
 .kpi{background:var(--pri);color:var(--on);border-radius:18px;padding:.8rem}.kpi b{display:block;font-size:1.15rem;letter-spacing:-.03em}.kpi small{opacity:.85}
 .tools select#srt{width:auto}
 .foot{text-align:center;color:var(--mut);font-size:.82rem;padding:2rem 1rem}
+
+/* ===== tema vermelho e branco ===== */
+:root{--bg:#f7f7f7;--card:#fff;--ink:#3e3e3e;--mut:#717171;--pri:#ea1d2c;--on:#fff;--pink:#ffe3e5;--sun:#ffc72c;--line:#e8e8e8}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#181818;--card:#242424;--ink:#f2f2f2;--mut:#a8a8a8;--pri:#ea1d2c;--on:#fff;--pink:#3a1d20;--line:#363636}}
+:root[data-theme="dark"]{--bg:#181818;--card:#242424;--ink:#f2f2f2;--mut:#a8a8a8;--pri:#ea1d2c;--on:#fff;--pink:#3a1d20;--line:#363636}
+#conn{display:none}
+header{background:var(--card);box-shadow:0 1px 0 var(--line)}
+.logo b{background:var(--pri);color:#fff}
+.sun{background:var(--pri);color:#fff;border-color:var(--pri)}
+.magic .sun{background:#fff;color:var(--pri);border-color:#fff}
+.magic{background:var(--pri);color:#fff}
+h1 em{background:var(--pri);color:#fff}
+.rail button.on span{background:var(--pink);border-color:var(--pri)}
+.rail button.on{color:var(--pri);font-weight:700}
+#dock{background:var(--pri);color:#fff}
+.tabs button.on,.kpi{background:var(--pri);color:#fff}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,380px),1fr));gap:.8rem;padding-top:1rem}
+.it{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:.9rem;border-bottom:1px solid var(--line)}
+.it .buy>b{color:var(--ink)}
+.empty,.sk{grid-column:1/-1}
+.tile{border-radius:14px}
 </style>
 </head>
 <body>
-<div class="demo">🎓 Versão demonstrativa: os dados ficam só no seu navegador. Admin para testar: <b>admin@ibag.com</b> / <b>admin123</b></div>
 <header>
   <div class="logo"><b>i</b>Bag</div>
   <button id="conn" title="Configurar endereço da API"><i></i><span>conectando…</span></button>
@@ -126,7 +146,7 @@ details form{display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem}
   <button id="surp">🎲 Surpreenda-me</button>
 </div>
 <main id="list" class="list"></main>
-<footer class="foot">iBag · projeto acadêmico de delivery · FastAPI + SQLite + JavaScript</footer>
+<footer class="foot">© 2026 iBag · Peça, acompanhe e receba.</footer>
 
 <button id="dock" class="pri" aria-label="Abrir sacola"><span id="stack"></span><span id="dl">Sacola vazia</span></button>
 <div id="ov"></div>
@@ -134,6 +154,7 @@ details form{display:flex;flex-direction:column;gap:.5rem;margin-top:.6rem}
 <div id="modal"></div>
 <div id="toasts"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 const LS = (() => { try { const k = '__t'; localStorage.setItem(k, k); localStorage.removeItem(k); return localStorage; } catch (e) { return {}; } })();
 /* ===== CONEXÃO COM A API =====
@@ -148,131 +169,40 @@ const EMO = {suco:'🧃',cerv:'🍺',sorv:'🍨',açaí:'🥣',acai:'🥣',água
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = c => (c / 100).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 
-/* ===== API SIMULADA (versão demonstrativa): roda no navegador; dados salvos no localStorage ===== */
-const DBK = 'ibag_demo_v2';
-const D = (() => {
-  try { const j = JSON.parse(LS[DBK] || 'null'); if (j) return j; } catch (e) {}
-  const C = [[1,'Exclusivos iBag','Produtos oficiais e ecológicos da marca iBag'],[2,'Hambúrgueres','Burgers artesanais, suculentos e combos'],[3,'Pizzas','Pizzas salgadas e doces assadas no forno a lenha'],[4,'Comida Japonesa','Sushis, temakis, sashimis e combos orientais'],[5,'Bebidas','Refrigerantes, sucos naturais e chás'],[6,'Sobremesas','Doces, bolos e sorvetes para adoçar o seu dia'],[7,'Massas','Massas frescas, lasanhas e molhos artesanais'],[8,'Saudáveis','Saladas, bowls e opções leves'],[9,'Mexicana','Tacos, burritos e nachos'],[10,'Padaria & Café','Pães, cafés e lanches rápidos']];
-  const L = [[1,'Loja Oficial iBag','Acessórios',5],[2,'iBag Burger House','Hambúrgueres',4.8],[3,'Pizzeria Bella Napoli','Pizzas',4.7],[4,'Sakura Sushi Bar','Comida Japonesa',4.9],[5,'Doceria Doce Sonho','Sobremesas',4.6],[6,'Cantina Nonna Lucia','Massas',4.8],[7,'Verde Bowl','Saudáveis',4.7],[8,'El Taco Loco','Mexicana',4.5],[9,'Padaria Pão Quente','Padaria & Café',4.6]];
-  const P = [[1,1,'Sacola Térmica iBag Pro','Sacola ecológica e reutilizável iBag. Mantém o seu pedido quente ou gelado por mais tempo.',1990],
-    [1,1,'Mochila Entregador iBag','Mochila reforçada impermeável com isolamento térmico de alta performance.',12900],
-    [2,2,'Hambúrguer iBag Smash','Pão brioche, 2 smash burgers de 90g, queijo prato e molho da casa.',3290],
-    [2,2,'Cheese Bacon','Blend 160g, cheddar, bacon crocante e cebola caramelizada.',3690],
-    [2,2,'Burger Veggie','Hambúrguer de grão-de-bico, rúcula, tomate e maionese verde.',3490],
-    [3,3,'Pizza Margherita','Molho de tomate, muçarela de búfala e manjericão fresco.',4590],
-    [3,3,'Pizza Calabresa','Calabresa artesanal, cebola roxa e azeitonas.',4290],
-    [3,3,'Pizza Quatro Queijos','Muçarela, gorgonzola, parmesão e provolone.',4890],
-    [4,4,'Combo Sushi 20 peças','Salmão, atum e kani, com shoyu e gengibre.',5490],
-    [4,4,'Temaki de Salmão','Salmão fresco, cream cheese e cebolinha.',2790],
-    [4,4,'Sashimi Misto','12 fatias de salmão, atum e peixe branco.',4290],
-    [2,5,'Suco Natural de Laranja','Espremido na hora, 500ml.',1090],
-    [2,5,'Refrigerante Lata','Lata 350ml gelada. Cola, guaraná ou limão.',690],
-    [4,5,'Chá Gelado de Pêssego','Chá preto com pêssego, 400ml.',890],
-    [5,6,'Brigadeiro Gourmet','Brigadeiro de chocolate belga, caixa com 6.',2290],
-    [5,6,'Petit Gâteau','Bolo quente de chocolate com sorvete de creme.',2590],
-    [5,6,'Torta de Limão','Fatia generosa com merengue maçaricado.',1890],
-    [2,2,'Duplo Cheddar Melt','Dois blends de 120g, muito cheddar cremoso e cebola crispy.',4190],
-    [2,2,'Burger BBQ Crocante','Blend 160g, bacon, anéis de cebola e molho barbecue defumado.',3890],
-    [2,2,'Batata Frita Crocante','Porção generosa de batata frita sequinha com sal e páprica.',1890],
-    [2,2,'Onion Rings','Anéis de cebola empanados, com molho especial da casa.',2190],
-    [3,3,'Pizza Frango com Catupiry','Frango desfiado, catupiry original e milho.',4490],
-    [3,3,'Pizza Portuguesa','Presunto, ovos, cebola, ervilha e azeitona.',4390],
-    [3,3,'Pizza Pepperoni','Pepperoni fatiado, muçarela e orégano.',4690],
-    [3,3,'Pizza de Chocolate com Morango','Chocolate ao leite derretido e morangos frescos.',3990],
-    [4,4,'Hot Roll Salmão (10 peças)','Salmão empanado e frito, com cream cheese e molho tarê.',3290],
-    [4,4,'Uramaki Filadélfia (8 peças)','Salmão, cream cheese e cebolinha.',2890],
-    [4,4,'Yakisoba de Frango','Macarrão oriental salteado com legumes e frango.',3490],
-    [4,4,'Gyoza (6 unidades)','Pastéis japoneses de carne suína grelhados.',2490],
-    [2,5,'Suco de Maracujá 500ml','Natural, feito na hora. Pode pedir sem açúcar.',1190],
-    [2,5,'Limonada Suíça','Limão batido com leite condensado, 500ml.',1290],
-    [2,5,'Cerveja Artesanal IPA 355ml','Lúpulo cítrico e amargor equilibrado. Gelada.',1890],
-    [4,5,'Água Mineral 500ml','Sem gás ou com gás.',490],
-    [9,5,'Café Expresso','Café especial de grãos selecionados.',590],
-    [9,5,'Cappuccino Cremoso','Café com leite vaporizado e canela.',1090],
-    [5,6,'Cheesecake de Frutas Vermelhas','Base crocante e calda de frutas vermelhas.',2490],
-    [5,6,'Sorvete Artesanal 2 Bolas','Sabores do dia, com calda e farofa de castanha.',1790],
-    [5,6,'Churros Recheados (6 un.)','Recheio de doce de leite e açúcar com canela.',2190],
-    [5,6,'Pudim de Leite Condensado','Pudim cremoso com calda de caramelo.',1490],
-    [5,6,'Açaí 500ml com Frutas','Açaí cremoso com banana, morango e granola.',2690],
-    [6,7,'Lasanha à Bolonhesa','Camadas de massa fresca, molho bolonhesa e queijo gratinado.',4290],
-    [6,7,'Espaguete ao Pomodoro','Espaguete al dente com molho de tomate fresco e manjericão.',3490],
-    [6,7,'Fettuccine Alfredo','Fettuccine em molho cremoso de queijo parmesão.',3990],
-    [6,7,'Nhoque ao Sugo','Nhoque macio com molho de tomate e parmesão.',3690],
-    [7,8,'Salada Caesar com Frango','Alface americana, frango grelhado, parmesão e croutons.',3290],
-    [7,8,'Bowl de Salmão','Arroz, salmão grelhado, abacate, pepino e gergelim.',3990],
-    [7,8,'Wrap Integral de Frango','Wrap integral com frango, folhas e molho de iogurte.',2790],
-    [7,8,'Sanduíche Natural','Pão integral, peito de peru, queijo branco e cenoura.',2290],
-    [7,5,'Suco Detox Verde','Couve, limão, gengibre e maçã.',1390],
-    [8,9,'Tacos de Carne (3 un.)','Carne temperada, guacamole, pico de gallo e coentro.',3290],
-    [8,9,'Burrito de Frango','Tortilha, frango, feijão, arroz e queijo.',3490],
-    [8,9,'Nachos com Queijo','Tortilhas crocantes com cheddar e jalapeño.',2790],
-    [8,9,'Quesadilla de Queijo','Tortilha grelhada recheada de queijo derretido.',2590],
-    [9,10,'Pão de Queijo (6 un.)','Quentinho, crocante por fora e macio por dentro.',1290],
-    [9,10,'Croissant de Chocolate','Massa folhada amanteigada com recheio de chocolate.',1490],
-    [9,10,'Misto Quente','Pão de forma, presunto e queijo na chapa.',1590],
-    [9,10,'Bolo de Cenoura com Chocolate','Fatia generosa com cobertura de chocolate.',1390]];
-  return {users:[{id:1,name:'Administrador',email:'admin@ibag.com',password:'admin123',role:'admin'}],
-    cats:C.map(([id,name,description]) => ({id,name,description})),
-    stores:L.map(([id,name,category,rating]) => ({id,name,category,rating})),
-    prods:P.map(([store_id,category_id,name,description,price_cents], i) => ({id:i + 1,store_id,category_id,name,description,price_cents,image_url:'',active:true})),
-    orders:[], nu:2, no:1};
-})();
-const save = () => { try { LS[DBK] = JSON.stringify(D); } catch (e) {} };
-const fail = m => { throw new Error(m); };
+/* ===== CONEXÃO COM O SUPABASE (banco PostgreSQL na nuvem) ===== */
+const SUPABASE_URL = 'https://lkhwdsnkugqzekwgpeaz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_AufJlODYpKlMRHniUs7tUQ_fGaH987F'; // chave pública: a segurança fica nas regras RLS do banco
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const tr = m => ({'Invalid login credentials':'E-mail ou senha incorretos', 'Email not confirmed':'Confirme seu e-mail (veja a caixa de entrada) antes de entrar', 'User already registered':'E-mail já cadastrado'}[m]
+  || (/row-level security/.test(m) ? 'Acesso restrito a administradores' : /Password should be/.test(m) ? 'A senha precisa ter 6 ou mais caracteres' : m));
+const ok = ({data, error}) => { if (error) throw new Error(tr(error.message)); return data; };
+async function me() {
+  const {data:{session}} = await sb.auth.getSession();
+  if (!session) { if (S.token) logout(true); throw new Error('Entre na sua conta'); }
+  const pr = ok(await sb.from('profiles').select('name,role').eq('id', session.user.id).single());
+  return {id:session.user.id, name:pr.name, email:session.user.email, role:pr.role};
+}
 async function api(path, o = {}) {
-  await new Promise(r => setTimeout(r, 120));
   const [p] = path.split('?'), m = (o.method || 'GET').toUpperCase();
   const b = o.json || (o.body ? Object.fromEntries(o.body) : {});
-  const me = S.token && D.users.find(u => 't' + u.id === S.token);
-  const auth = () => { if (!me) { if (S.token) logout(true); fail('Entre na sua conta'); } return me; };
-  const pub = u => ({id:u.id,name:u.name,email:u.email,role:u.role});
-  const live = x => { if (x.auto && x.status !== 'cancelled') x.status = STEPS[Math.min(3, Math.floor((Date.now() - x.t0) / 10000))][0]; return x; };
-  if (p === '/health') return {status:'ok'};
-  if (p === '/categories') return D.cats;
-  if (p === '/stores') return [...D.stores].sort((a, c) => c.rating - a.rating);
-  if (p === '/products' && m === 'GET') return D.prods.filter(x => x.active);
-  if (p === '/products' && m === 'POST') {
-    if (auth().role !== 'admin') fail('Acesso restrito a administradores');
-    if (!b.name || !(b.price_cents >= 0)) fail('Dados do produto inválidos');
-    const x = {image_url:'',active:true,store_id:null,category_id:null,description:'',...b,id:Math.max(0, ...D.prods.map(z => z.id)) + 1};
-    D.prods.push(x); save(); return x;
-  }
-  if (p === '/auth/register') {
-    if (!b.name || b.name.length < 2) fail('Informe seu nome');
-    if (!/^\S+@\S+\.\S+$/.test(b.email || '')) fail('E-mail inválido');
-    if ((b.password || '').length < 6) fail('A senha precisa ter 6 ou mais caracteres');
-    const em = b.email.toLowerCase(); if (D.users.some(u => u.email === em)) fail('E-mail já cadastrado');
-    const u = {id:D.nu++,name:b.name,email:em,password:b.password,role:'customer'}; D.users.push(u); save(); return pub(u);
-  }
-  if (p === '/auth/login') {
-    const u = D.users.find(x => x.email === (b.username || '').toLowerCase() && x.password === b.password);
-    if (!u) fail('E-mail ou senha incorretos');
-    return {access_token:'t' + u.id,token_type:'bearer',user:pub(u)};
-  }
-  if (p === '/auth/me') return pub(auth());
+  if (p === '/health') { ok(await sb.from('categories').select('id').limit(1)); return {status:'ok'}; }
+  if (p === '/categories') return ok(await sb.from('categories').select('*').order('id'));
+  if (p === '/stores') return ok(await sb.from('stores').select('*').order('rating', {ascending:false}));
+  if (p === '/products' && m === 'GET') return ok(await sb.from('products').select('*').eq('active', true).order('id').limit(500));
+  if (p === '/products') return ok(await sb.from('products').insert({name:b.name, description:b.description || '', price_cents:b.price_cents, store_id:b.store_id, category_id:b.category_id}).select().single());
+  if (p === '/auth/register') return ok(await sb.auth.signUp({email:b.email, password:b.password, options:{data:{name:b.name}}}));
+  if (p === '/auth/login') { ok(await sb.auth.signInWithPassword({email:b.username, password:b.password})); return {access_token:'sb', user:await me()}; }
+  if (p === '/auth/me') return me();
   if (p === '/orders' && m === 'GET') {
-    auth(); const l = D.orders.filter(x => me.role === 'admin' || x.user_id === me.id).map(live).reverse(); save(); return l;
+    const rows = ok(await sb.from('orders').select('*, items:order_items(product_id,product_name_snapshot,unit_price_cents,quantity), cliente:profiles(name)').order('id', {ascending:false}).limit(200));
+    return rows.map(r => ({...r, cliente:r.cliente?.name}));
   }
-  if (p === '/orders' && m === 'POST') {
-    auth(); if ((b.delivery_address || '').trim().length < 5) fail('Informe o endereço de entrega');
-    const q = {}; (b.items || []).forEach(i => q[i.product_id] = (q[i.product_id] || 0) + i.quantity);
-    const items = Object.entries(q).map(([id, quantity]) => { const x = D.prods.find(z => z.id == id && z.active); if (!x) fail('Produto ' + id + ' indisponível'); return {product_id:x.id,product_name_snapshot:x.name,unit_price_cents:x.price_cents,quantity}; });
-    if (!items.length) fail('Pedido vazio');
-    const od = {id:D.no++,user_id:me.id,delivery_address:b.delivery_address,status:'received',total_cents:items.reduce((a, i) => a + i.unit_price_cents * i.quantity, 0),t0:Date.now(),auto:true,items};
-    D.orders.push(od); save(); return od;
-  }
+  if (p === '/orders' && m === 'POST') return {id:ok(await sb.rpc('create_order', {p_address:b.delivery_address, p_items:b.items}))};
   const mt = p.match(/^\/orders\/(\d+)\/status$/);
-  if (mt && m === 'PATCH') {
-    auth(); const od = D.orders.find(x => x.id == mt[1]);
-    if (!od || (me.role !== 'admin' && od.user_id !== me.id)) fail('Pedido não encontrado');
-    live(od);
-    if (me.role !== 'admin') { if (b.status !== 'cancelled' || od.status !== 'received') fail('Você só pode cancelar pedidos que ainda estão como recebidos'); }
-    else if (od.status === 'completed' || od.status === 'cancelled') fail('Este pedido já foi finalizado');
-    od.status = b.status; od.auto = false; save(); return od;
-  }
-  fail('Rota não encontrada: ' + p);
+  if (mt && m === 'PATCH') { ok(await sb.rpc('set_order_status', {p_id:+mt[1], p_status:b.status})); return {}; }
+  throw new Error('Rota não encontrada: ' + p);
 }
-/* ===== FIM DA API SIMULADA ===== */
+/* ===== FIM DA CONEXÃO ===== */
 const toast = (m, bad) => { const t = document.createElement('div'); t.className = 'toast' + (bad ? ' bad' : ''); t.textContent = m; $('#toasts').append(t); setTimeout(() => t.remove(), 3200); };
 function burst(e) {
   for (let i = 0; i < 26; i++) {
@@ -365,7 +295,7 @@ async function showOrders() {
       <div class="r2"><b>${money(o.total_cents)}</b><div class="acts">${!adm ? `<button data-again="${o.id}">↻ Pedir de novo</button>` : ''}${!adm && o.status === 'completed' ? rate(o.id) : ''}
       ${adm && nx && !bad ? `<button class="pri" data-st="${o.id}:${nx[0]}">Avançar: ${nx[1]}</button>` : ''}
       ${(adm ? !bad && o.status !== 'completed' : o.status === 'received') ? `<button data-st="${o.id}:cancelled">Cancelar</button>` : ''}</div></div>
-      ${adm ? `<small>Cliente #${o.user_id} · ${esc(o.delivery_address)}</small>` : ''}</div>`; }).join('') : '<div class="empty">📦<br>Nenhum pedido ainda.</div>');
+      ${adm ? `<small>Cliente ${esc(o.cliente || o.user_id)} · ${esc(o.delivery_address)}</small>` : ''}</div>`; }).join('') : '<div class="empty">📦<br>Nenhum pedido ainda.</div>');
   } catch (e) { $('#db').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
 }
 const adminForm = () => `<details><summary><b>＋ Novo produto</b></summary><form id="np"><input name="name" placeholder="Nome" required><input name="description" placeholder="Descrição">
@@ -384,7 +314,7 @@ async function setUser() {
   try { S.user = S.token ? await api('/auth/me') : null; } catch { S.user = null; }
   $('#bUser').textContent = S.user ? '👤 ' + S.user.name.split(' ')[0] + ' · Sair' : 'Entrar';
 }
-function logout(silent) { S.token = S.user = null; delete LS.token; setUser(); if (!silent) toast('Você saiu da conta'); }
+function logout(silent) { try { sb.auth.signOut(); } catch (e) {} S.token = S.user = null; delete LS.token; setUser(); if (!silent) toast('Você saiu da conta'); }
 
 /* ===== Eventos ===== */
 document.addEventListener('click', async e => {
@@ -420,7 +350,7 @@ $('#bOrd').onclick = () => openSh('orders');
 $('#bUser').onclick = () => S.user ? logout() : authModal();
 $('#ov').onclick = $('#dx').onclick = closeSh;
 $('#modal').onclick = e => { if (e.target.id === 'modal') e.target.classList.remove('on'); };
-$('#conn').onclick = () => toast('Demonstração: a API e o banco são simulados neste navegador.');
+$('#conn').onclick = () => toast('Banco de dados: Supabase (PostgreSQL) na nuvem.');
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeSh(); $('#modal').classList.remove('on'); } });
 $('#surp').onclick = () => {
   if (!S.prods.length) return; S.cat = S.store = 0; S.q = ''; X.onlyFav = false; $('#favb').textContent = '🤍 Favoritos'; $('#favb').classList.remove('pri'); $('#q').value = ''; renderTop(); renderList();
@@ -464,12 +394,12 @@ setInterval(() => { if (S.dr === 'orders' && S.user) showOrders(); }, 8000);
   $('#list').innerHTML = '<div class="sk"></div>'.repeat(5);
   const c = $('#conn'), label = c.querySelector('span');
   try {
-    await api('/health'); c.className = 'ok'; label.textContent = 'Demo · API simulada';
+    await api('/health'); c.className = 'ok'; label.textContent = 'Supabase conectado';
     [S.cats, S.stores, S.prods] = await Promise.all([api('/categories'), api('/stores'), api('/products?limit=200')]);
     await setUser(); renderTop(); renderList(); saveCart();
   } catch (e) {
-    c.className = 'off'; label.textContent = 'API offline · configurar';
-    $('#list').innerHTML = `<div class="empty">Não foi possível falar com a API em <b>${esc(API || location.origin)}</b>.<br>Confira se o servidor está rodando e se o MySQL está ligado, ou clique em "API offline" para trocar o endereço.</div>`;
+    c.className = 'off'; label.textContent = 'Supabase offline';
+    $('#list').innerHTML = `<div class="empty">Não foi possível falar com o Supabase.<br>Confira a internet e se o projeto não está pausado (o plano gratuito pausa após inatividade).</div>`;
   }
 })();
 </script>
