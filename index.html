@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-c4BVxYj0/F4lYGOKsdF4Bu9QGrTckgellZf2Xfq25Qw=' https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js; style-src 'sha256-sXZVOfD+cxWvb3QFe9AuoOIVi5KwJ+92DU1RnrTFoFc=' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src https://lkhwdsnkugqzekwgpeaz.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; manifest-src 'none'; worker-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-vztcBayqrKmWknnXKtVn2XYmAIXsZvHg3WJnnaWZSE8=' https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js; style-src 'sha256-sXZVOfD+cxWvb3QFe9AuoOIVi5KwJ+92DU1RnrTFoFc=' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src https://lkhwdsnkugqzekwgpeaz.supabase.co; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; manifest-src 'none'; worker-src 'none'">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#000000">
@@ -369,16 +369,44 @@ document.addEventListener('load', e => { if (e.target.tagName === 'IMG') e.targe
 const settle = root => root.querySelectorAll('img.ph').forEach(i => { if (i.complete && i.naturalWidth) i.classList.add('in'); });
 
 /* ===== VALIDAÇÃO DO CADASTRO ===== */
-const TYPOS = {'gmial.com':'gmail.com','gmai.com':'gmail.com','gamil.com':'gmail.com','gmail.con':'gmail.com','gmail.co':'gmail.com','gnail.com':'gmail.com','hotmial.com':'hotmail.com','hotmal.com':'hotmail.com','outlok.com':'outlook.com','yaho.com':'yahoo.com','yahoo.con':'yahoo.com'};
+const TYPOS = {'gmial.com':'gmail.com','gmai.com':'gmail.com','gamil.com':'gmail.com','gmail.con':'gmail.com','gmail.co':'gmail.com','gnail.com':'gmail.com','gmaill.com':'gmail.com','gmail.com.br':'gmail.com','gmil.com':'gmail.com','hotmial.com':'hotmail.com','hotmal.com':'hotmail.com','hotmail.con':'hotmail.com','outlok.com':'outlook.com','outlook.con':'outlook.com','yaho.com':'yahoo.com','yahoo.con':'yahoo.com','iclod.com':'icloud.com','icloud.con':'icloud.com'};
+/* provedores aceitos no cadastro (para aceitar outro, acrescente aqui, na função signup e na migration 005) */
+const PROVEDORES = ['gmail.com','googlemail.com','outlook.com','hotmail.com','live.com','yahoo.com','yahoo.com.br','icloud.com','me.com','proton.me','protonmail.com','uol.com.br','bol.com.br','terra.com.br'];
+const PARTICULAS = ['de','da','do','das','dos','e','di','du','del','della','van','von','bin','al'];
+const NOMES_FALSOS = ['teste','test','testando','admin','administrador','usuario','user','fulano','beltrano','ciclano','nome','sobrenome','cliente','ibag','asdf','qwer','qwerty','abc','abcd','aaa','xxx','lorem','ipsum','fake','anonimo','nulo','null','none'];
+const sem = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+function nomeReal(name) {
+  if (name.length < 5 || name.length > 80 || !/^\p{L}{2,}(?:[ '.-]\p{L}+)+$/u.test(name)) return 'Informe seu nome e sobrenome reais, usando só letras.';
+  const palavras = name.split(/[ '.-]+/).filter(Boolean).map(sem);
+  const fortes = palavras.filter(w => !PARTICULAS.includes(w));
+  if (fortes.length < 2 || fortes.some(w => w.length < 2)) return 'Informe nome e sobrenome completos (não use só iniciais).';
+  for (const w of fortes) {
+    if (NOMES_FALSOS.includes(w) || !/[aeiouy]/.test(w) || /(.)\1{2,}/.test(w) || /[bcdfghjklmnpqrstvwxz]{5,}/.test(w) || new Set(w).size < (w.length > 3 ? 3 : 2))
+      return 'Esse nome não parece real. Use seu nome e sobrenome verdadeiros.';
+  }
+  return '';
+}
+function emailOk(email) {
+  if (email.length > 254 || !/^[a-z0-9._%+-]{1,64}@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(email)) return 'E-mail inválido. Exemplo: nome@gmail.com';
+  const [u, d] = email.split('@');
+  if (TYPOS[d]) return `Você quis dizer ${u}@${TYPOS[d]}?`;
+  if (!PROVEDORES.includes(d)) return 'Use um e-mail Gmail, Outlook, Hotmail, Yahoo ou iCloud. Exemplo: nome@gmail.com';
+  if (u.includes('+') || u.startsWith('.') || u.endsWith('.') || u.includes('..')) return 'O e-mail não pode ter "+" nem pontos no início, no fim ou repetidos.';
+  if (d === 'gmail.com' || d === 'googlemail.com') {
+    if (!/^[a-z0-9.]{6,30}$/.test(u) || !/[a-z]/.test(u)) return 'Esse Gmail não é válido: o endereço tem de 6 a 30 letras, números ou pontos (e ao menos uma letra).';
+  } else if (u.length < 3) return 'E-mail inválido. Exemplo: nome@gmail.com';
+  return '';
+}
 function validar(v) {
   const name = (v.name || '').trim().replace(/\s+/g, ' '), email = (v.email || '').trim().toLowerCase(), pw = v.password || '';
-  if (!/^\p{L}{2,}(?:[ '.-]\p{L}+)+$/u.test(name) || name.length > 80) return 'Informe nome e sobrenome, usando só letras.';
-  if (!/^[a-z0-9._%+-]{1,64}@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(email)) return 'E-mail inválido. Exemplo: nome@gmail.com';
-  const [u, d] = email.split('@'); if (TYPOS[d]) return `Você quis dizer ${u}@${TYPOS[d]}?`;
+  const en = nomeReal(name); if (en) return en;
+  const ee = emailOk(email); if (ee) return ee;
   if (pw.length < 8 || pw.length > 72 || !/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return 'A senha precisa ter 8 ou mais caracteres, com letras e números.';
+  if (pw.toLowerCase().includes(email.split('@')[0]) && email.split('@')[0].length >= 4) return 'A senha não pode conter o seu e-mail.';
   if (pw !== v.confirm) return 'As senhas não conferem.';
   return '';
 }
+const LOCK = {n:0, ate:0}; // trava o formulário de login por 30 s após 5 erros seguidos
 const showErr = m => { const e = $('#aerr'); if (e) e.textContent = m; };
 
 /* ===== CONEXÃO COM O SUPABASE ===== */
@@ -575,7 +603,7 @@ function detail(id) {
 function authModal(m = 'login') {
   const r = m === 'register';
   $('#modal').innerHTML = `<form id="af" data-mode="${m}"><div class="tabs"><button type="button" class="${r ? '' : 'on'}" data-tab="login">Entrar</button><button type="button" class="${r ? 'on' : ''}" data-tab="register">Criar conta</button></div>
-  ${r ? '<input name="name" placeholder="Nome e sobrenome" aria-label="Nome e sobrenome" autocomplete="name" maxlength="80" required>' : ''}<input name="email" type="email" placeholder="E-mail" aria-label="E-mail" autocomplete="email" maxlength="254" required><input name="password" type="password" placeholder="${r ? 'Senha (8+ caracteres, letras e números)' : 'Senha'}" aria-label="Senha" autocomplete="${r ? 'new-password' : 'current-password'}" minlength="${r ? 8 : 6}" maxlength="72" required>${r ? '<input name="confirm" type="password" placeholder="Repita a senha" aria-label="Repita a senha" autocomplete="new-password" required>' : ''}<div id="aerr" class="err" role="alert"></div>
+  ${r ? '<input name="name" placeholder="Nome e sobrenome reais" aria-label="Nome e sobrenome" autocomplete="name" maxlength="80" required>' : ''}<input name="email" type="email" placeholder="E-mail (ex.: nome@gmail.com)" aria-label="E-mail" autocomplete="email" maxlength="254" required><input name="password" type="password" placeholder="${r ? 'Senha (8+ caracteres, letras e números)' : 'Senha'}" aria-label="Senha" autocomplete="${r ? 'new-password' : 'current-password'}" minlength="${r ? 8 : 6}" maxlength="72" required>${r ? '<input name="confirm" type="password" placeholder="Repita a senha" aria-label="Repita a senha" autocomplete="new-password" required>' : ''}<div id="aerr" class="err" role="alert"></div>
   <button class="pri">${r ? 'Criar conta' : 'Entrar'}</button><button type="button" data-close>Fechar</button></form>`;
   $('#modal').classList.add('on'); $('#af input').focus();
 }
@@ -611,9 +639,15 @@ document.addEventListener('submit', async e => {
   e.preventDefault(); const f = e.target, v = Object.fromEntries(new FormData(f));
   try {
     if (f.id === 'af') {
-      if (f.dataset.mode === 'register') { const er = validar(v); if (er) { showErr(er); return; } await api('/auth/register', {method:'POST', json:{name:v.name, email:v.email, password:v.password}}); }
-      const r = await api('/auth/login', {method:'POST', body:new URLSearchParams({username:v.email, password:v.password})});
-      S.token = LS.token = r.access_token; await setUser(); $('#modal').classList.remove('on'); toast('Olá, ' + S.user.name.split(' ')[0] + '!');
+      if (f.dataset.mode === 'register') {
+        const er = validar(v); if (er) { showErr(er); return; }
+        const reg = await api('/auth/register', {method:'POST', json:{name:v.name, email:v.email, password:v.password}});
+        if (reg.confirm) { authModal('login'); toast('Enviamos um link de confirmação para ' + v.email.trim().toLowerCase() + '. Confirme e depois entre.'); return; }
+      }
+      if (Date.now() < LOCK.ate) { showErr('Muitas tentativas. Aguarde ' + Math.ceil((LOCK.ate - Date.now()) / 1000) + ' s.'); return; }
+      let r; try { r = await api('/auth/login', {method:'POST', body:new URLSearchParams({username:v.email.trim().toLowerCase(), password:v.password})}); }
+      catch (er) { if (++LOCK.n >= 5) { LOCK.n = 0; LOCK.ate = Date.now() + 30000; } throw er; }
+      LOCK.n = 0; S.token = LS.token = r.access_token; await setUser(); $('#modal').classList.remove('on'); toast('Olá, ' + S.user.name.split(' ')[0] + '!');
     }
     if (f.id === 'np') {
       const price = Math.round(parseFloat(String(v.price).replace(',', '.')) * 100);
