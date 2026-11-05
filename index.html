@@ -2,6 +2,8 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>iBag — monte sua sacola</title>
 <style>
@@ -116,6 +118,10 @@ h1 em{background:var(--pri);color:#fff}
 .it .buy>b{color:var(--ink)}
 .empty,.sk{grid-column:1/-1}
 .tile{border-radius:14px}
+.err{color:var(--bad);font-size:.85rem;min-height:1.2em}
+.it{grid-template-columns:6.2rem 1fr auto}
+.tile{width:6.2rem;height:6.2rem;border-radius:14px}
+.tile img{transition:transform .3s}.it:hover .tile img{transform:scale(1.06)}
 </style>
 </head>
 <body>
@@ -169,6 +175,20 @@ const EMO = {suco:'🧃',cerv:'🍺',sorv:'🍨',açaí:'🥣',acai:'🥣',água
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = c => (c / 100).toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
 
+/* ===== VALIDAÇÃO DO CADASTRO E FOTOS ===== */
+const TYPOS = {'gmial.com':'gmail.com','gmai.com':'gmail.com','gamil.com':'gmail.com','gmail.con':'gmail.com','gmail.co':'gmail.com','gnail.com':'gmail.com','hotmial.com':'hotmail.com','hotmal.com':'hotmail.com','outlok.com':'outlook.com','yaho.com':'yahoo.com','yahoo.con':'yahoo.com'};
+function validar(v) {
+  const name = (v.name || '').trim().replace(/\s+/g, ' '), email = (v.email || '').trim().toLowerCase(), pw = v.password || '';
+  if (!/^\p{L}{2,}(?:[ '.-]\p{L}+)+$/u.test(name) || name.length > 80) return 'Informe nome e sobrenome, usando só letras.';
+  if (!/^[a-z0-9._%+-]{1,64}@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(email)) return 'E-mail inválido. Exemplo: nome@gmail.com';
+  const [u, d] = email.split('@'); if (TYPOS[d]) return `Você quis dizer ${u}@${TYPOS[d]}?`;
+  if (pw.length < 8 || pw.length > 72 || !/[A-Za-z]/.test(pw) || !/\d/.test(pw)) return 'A senha precisa ter 8 ou mais caracteres, com letras e números.';
+  if (pw !== v.confirm) return 'As senhas não conferem.';
+  return '';
+}
+const showErr = m => { const e = $('#aerr'); if (e) e.textContent = m; };
+const imgSrc = u => /^unsplash:/.test(u) ? 'https://images.unsplash.com/photo-' + u.slice(9) + '?auto=format&fit=crop&w=480&h=360&q=70' : u;
+
 /* ===== CONEXÃO COM O SUPABASE (banco PostgreSQL na nuvem) ===== */
 const SUPABASE_URL = 'https://lkhwdsnkugqzekwgpeaz.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_AufJlODYpKlMRHniUs7tUQ_fGaH987F'; // chave pública: a segurança fica nas regras RLS do banco
@@ -189,8 +209,14 @@ async function api(path, o = {}) {
   if (p === '/categories') return ok(await sb.from('categories').select('*').order('id'));
   if (p === '/stores') return ok(await sb.from('stores').select('*').order('rating', {ascending:false}));
   if (p === '/products' && m === 'GET') return ok(await sb.from('products').select('*').eq('active', true).order('id').limit(500));
-  if (p === '/products') return ok(await sb.from('products').insert({name:b.name, description:b.description || '', price_cents:b.price_cents, store_id:b.store_id, category_id:b.category_id}).select().single());
-  if (p === '/auth/register') return ok(await sb.auth.signUp({email:b.email, password:b.password, options:{data:{name:b.name}}}));
+  if (p === '/products') return ok(await sb.from('products').insert({name:b.name, description:b.description || '', image_url:/^https:\/\/\S+$/.test(b.image_url || '') ? b.image_url : '', price_cents:b.price_cents, store_id:b.store_id, category_id:b.category_id}).select().single());
+  if (p === '/auth/register') {
+    let r; try { r = await fetch(SUPABASE_URL + '/functions/v1/signup', {method:'POST', headers:{'Content-Type':'application/json', apikey:SUPABASE_KEY}, body:JSON.stringify({name:b.name, email:b.email, password:b.password})}); }
+    catch (e) { throw new Error('Sem conexão. Tente novamente.'); }
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(Object.values(d.errors || {})[0] || d.error || 'Não foi possível criar a conta.');
+    return d;
+  }
   if (p === '/auth/login') { ok(await sb.auth.signInWithPassword({email:b.username, password:b.password})); return {access_token:'sb', user:await me()}; }
   if (p === '/auth/me') return me();
   if (p === '/orders' && m === 'GET') {
@@ -232,7 +258,7 @@ function renderList() {
   const l = S.prods.filter(p => (!S.cat || p.category_id === S.cat) && (!S.store || p.store_id === S.store) && (!q || (p.name + p.description + (storeOf(p.store_id)?.name || '')).toLowerCase().includes(q)));
   const l2 = sortL(l.filter(p => !X.onlyFav || X.fav.includes(p.id)));
   $('#list').innerHTML = l2.length ? l2.map(p => { const n = S.cart[p.id] || 0;
-    return `<article class="it" id="p${p.id}"><div class="tile" data-det="${p.id}" style="--h:${((p.category_id || 0) * 53 + 120) % 360}">${p.image_url ? `<img src="${esc(p.image_url)}" alt="">` : emo(p)}</div>
+    return `<article class="it" id="p${p.id}"><div class="tile" data-det="${p.id}" style="--h:${((p.category_id || 0) * 53 + 120) % 360}">${p.image_url ? `<img src="${esc(imgSrc(p.image_url))}" alt="${esc(p.name)}" loading="lazy" data-e="${emo(p)}" onerror="this.parentNode.textContent=this.dataset.e">` : emo(p)}</div>
     <div><h3>${esc(p.name)}</h3><p>${esc(p.description)}</p><small>${esc(storeOf(p.store_id)?.name || 'iBag')}</small></div>
     <div class="buy"><button class="heart" data-fav="${p.id}" aria-label="Favoritar" aria-pressed="${X.fav.includes(p.id)}">${X.fav.includes(p.id) ? '❤️' : '🤍'}</button><b>${money(p.price_cents)}</b>${n ? `<div class="step"><button data-dec="${p.id}" aria-label="Menos">−</button><b>${n}</b><button data-inc="${p.id}" aria-label="Mais">+</button></div>` : `<button class="pri" data-inc="${p.id}">Adicionar</button>`}</div></article>`; }).join('')
     : '<div class="empty">Nada por aqui. Tente outra busca ou limpe os filtros.</div>';
@@ -298,7 +324,7 @@ async function showOrders() {
       ${adm ? `<small>Cliente ${esc(o.cliente || o.user_id)} · ${esc(o.delivery_address)}</small>` : ''}</div>`; }).join('') : '<div class="empty">📦<br>Nenhum pedido ainda.</div>');
   } catch (e) { $('#db').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
 }
-const adminForm = () => `<details><summary><b>＋ Novo produto</b></summary><form id="np"><input name="name" placeholder="Nome" required><input name="description" placeholder="Descrição">
+const adminForm = () => `<details><summary><b>＋ Novo produto</b></summary><form id="np"><input name="name" placeholder="Nome" required><input name="description" placeholder="Descrição"><input name="image_url" type="url" placeholder="URL da foto (https://…, opcional)">
   <input name="price" placeholder="Preço (ex: 24,90)" required><select name="store_id"><option value="">Loja</option>${S.stores.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select>
   <select name="category_id"><option value="">Categoria</option>${S.cats.map(s => `<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select><button class="pri">Publicar</button></form></details>`;
 
@@ -306,7 +332,7 @@ const adminForm = () => `<details><summary><b>＋ Novo produto</b></summary><for
 function authModal(m = 'login') {
   const r = m === 'register';
   $('#modal').innerHTML = `<form id="af" data-mode="${m}"><div class="tabs"><button type="button" class="${r ? '' : 'on'}" data-tab="login">Entrar</button><button type="button" class="${r ? 'on' : ''}" data-tab="register">Criar conta</button></div>
-  ${r ? '<input name="name" placeholder="Seu nome" required>' : ''}<input name="email" type="email" placeholder="E-mail" required><input name="password" type="password" placeholder="Senha (mín. 6)" minlength="6" required>
+  ${r ? '<input name="name" placeholder="Nome e sobrenome" autocomplete="name" maxlength="80" required>' : ''}<input name="email" type="email" placeholder="E-mail" autocomplete="email" maxlength="254" required><input name="password" type="password" placeholder="${r ? 'Senha (8+ caracteres, letras e números)' : 'Senha'}" autocomplete="${r ? 'new-password' : 'current-password'}" minlength="${r ? 8 : 6}" maxlength="72" required>${r ? '<input name="confirm" type="password" placeholder="Repita a senha" autocomplete="new-password" required>' : ''}<div id="aerr" class="err" role="alert"></div>
   <button class="pri">${r ? 'Criar conta' : 'Entrar'}</button><button type="button" data-close>Fechar</button></form>`;
   $('#modal').classList.add('on');
 }
@@ -331,15 +357,15 @@ document.addEventListener('submit', async e => {
   e.preventDefault(); const f = e.target, v = Object.fromEntries(new FormData(f));
   try {
     if (f.id === 'af') {
-      if (f.dataset.mode === 'register') await api('/auth/register', {method:'POST', json:v});
+      if (f.dataset.mode === 'register') { const er = validar(v); if (er) { showErr(er); return; } await api('/auth/register', {method:'POST', json:{name:v.name, email:v.email, password:v.password}}); }
       const r = await api('/auth/login', {method:'POST', body:new URLSearchParams({username:v.email, password:v.password})});
       S.token = LS.token = r.access_token; await setUser(); $('#modal').classList.remove('on'); toast('Olá, ' + S.user.name.split(' ')[0] + '!');
     }
     if (f.id === 'np') {
-      await api('/products', {method:'POST', json:{name:v.name, description:v.description || '', price_cents:Math.round(parseFloat(v.price.replace(',', '.')) * 100), store_id:v.store_id ? +v.store_id : null, category_id:v.category_id ? +v.category_id : null}});
+      await api('/products', {method:'POST', json:{name:v.name, description:v.description || '', image_url:(v.image_url || '').trim(), price_cents:Math.round(parseFloat(v.price.replace(',', '.')) * 100), store_id:v.store_id ? +v.store_id : null, category_id:v.category_id ? +v.category_id : null}});
       S.prods = await api('/products?limit=200'); renderList(); toast('Produto publicado'); showOrders();
     }
-  } catch (er) { toast(er.message, true); }
+  } catch (er) { toast(er.message, true); if (f.id === 'af') showErr(er.message); }
 });
 $('#q').oninput = e => { S.q = e.target.value; renderList(); };
 $('#st').onchange = e => { S.store = +e.target.value; renderList(); };
@@ -372,7 +398,7 @@ const dash = os => { const v = os.filter(o => o.status !== 'cancelled'), t = v.r
   return `<div class="kpis">${k(money(t), 'Faturamento')}${k(v.length, 'Pedidos válidos')}${k(v.length ? money(Math.round(t / v.length)) : '—', 'Ticket médio')}${k(top ? esc(top[0]) : '—', 'Mais vendido')}</div>`; };
 function detail(id) {
   const p = S.prods.find(x => x.id === id), st = storeOf(p.store_id);
-  $('#modal').innerHTML = `<form><div style="font-size:4rem;text-align:center">${emo(p)}</div><h2>${esc(p.name)}</h2><p>${esc(p.description)}</p>
+  $('#modal').innerHTML = `<form>${p.image_url ? `<img src="${esc(imgSrc(p.image_url))}" alt="${esc(p.name)}" style="width:100%;height:200px;object-fit:cover;border-radius:16px" onerror="this.remove()">` : `<div style="font-size:4rem;text-align:center">${emo(p)}</div>`}<h2>${esc(p.name)}</h2><p>${esc(p.description)}</p>
     <small>${esc(st?.name || 'iBag')} · ⭐ ${Number(st?.rating || 5).toFixed(1)} · ⏱️ ${eta(p)} min</small><b style="font-size:1.5rem">${money(p.price_cents)}</b>
     <button class="pri" data-inc="${p.id}" data-close>Adicionar à sacola</button><button type="button" data-close>Fechar</button></form>`;
   $('#modal').classList.add('on');
